@@ -1,65 +1,69 @@
-module debounce_onepulse #(
-    parameter N_dc = 20 
-)(
-    input  wire CLK,
-    input  wire RESET,
-    input  wire PB,          // raw push button (active high)
-    output wire DPB,         // debounced button level
-    output wire SCEN         // single-clock pulse on rising edge
+module btn_onepulse (
+    input  wire clk,         // system clock (100 MHz)
+    input  wire reset,       // synchronous or async reset
+    input  wire btn_in,      // raw button input
+    output wire pulse        // 1-clock-wide pulse
 );
 
-    // 1) Synchronize PB to CLK domain (2-FF synchronizer)
-    reg pb_sync_0, pb_sync_1;
+    // ---------------------------
+    // 1) Synchronize the button
+    // ---------------------------
+    reg sync_0, sync_1;
 
-    always @(posedge CLK or posedge RESET) begin
-        if (RESET) begin
-            pb_sync_0 <= 1'b0;
-            pb_sync_1 <= 1'b0;
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            sync_0 <= 1'b0;
+            sync_1 <= 1'b0;
         end else begin
-            pb_sync_0 <= PB;
-            pb_sync_1 <= pb_sync_0;
+            sync_0 <= btn_in;
+            sync_1 <= sync_0;
         end
     end
 
-    wire pb_stable_in = pb_sync_1;
+    // ---------------------------
+    // 2) Debounce logic
+    // ---------------------------
+    // A small counter that increments only when the input stays stable.
+    // If unstable -> reset counter.
+    // Once counter overflows, accept new stable state.
 
-    // 2) Debounce counter
-    // If input stays different from current debounced value, count up.
-    // If it matches, reset counter.
-    reg [N_dc-1:0] db_count;
-    reg pb_debounced;
+    reg [19:0] db_count;       // ~10ms debounce at 100MHz
+    reg        debounced;      // debounced button level
 
-    always @(posedge CLK or posedge RESET) begin
-        if (RESET) begin
-            db_count     <= {N_dc{1'b0}};
-            pb_debounced <= 1'b0;
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            db_count   <= 20'd0;
+            debounced  <= 1'b0;
         end else begin
-            if (pb_stable_in == pb_debounced) begin
-                // input matches current debounced state: reset counter
-                db_count <= {N_dc{1'b0}};
+            if (sync_1 == debounced) begin
+                // input matches the stable value → reset counter
+                db_count <= 20'd0;
             end else begin
-                // input is different: increment counter
-                db_count <= db_count + 1'b1;
-                // when counter overflows (MSB=1), accept new state
-                if (&db_count) begin    // all bits are 1
-                    pb_debounced <= pb_stable_in;
-                    db_count     <= {N_dc{1'b0}};
+                // input changed → start counting stability time
+                db_count <= db_count + 20'd1;
+
+                // If counter overflow → accept new input
+                if (&db_count) begin    // all bits = 1
+                    debounced <= sync_1;
+                    db_count  <= 20'd0;
                 end
             end
         end
     end
 
-    assign DPB = pb_debounced;
+    // ---------------------------
+    // 3) One-pulse generator
+    // ---------------------------
+    reg debounced_prev;
 
-    // 3) One-pulse (single-clock enable) on rising edge of debounced signal
-    reg pb_debounced_prev;
-    always @(posedge CLK or posedge RESET) begin
-        if (RESET)
-            pb_debounced_prev <= 1'b0;
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            debounced_prev <= 1'b0;
         else
-            pb_debounced_prev <= pb_debounced;
+            debounced_prev <= debounced;
     end
 
-    assign SCEN = pb_debounced & ~pb_debounced_prev;  // 1-clock pulse on 0→1
+    // SCEN pulse: 1 clock cycle on rising edge
+    assign pulse = debounced & ~debounced_prev;
 
 endmodule
