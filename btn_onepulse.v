@@ -5,9 +5,6 @@ module btn_onepulse (
     output wire pulse        // 1-clock-wide pulse
 );
 
-    // ---------------------------
-    // 1) Synchronize the button
-    // ---------------------------
     reg sync_0, sync_1;
 
     always @(posedge clk or posedge reset) begin
