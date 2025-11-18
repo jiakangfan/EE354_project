@@ -245,7 +245,7 @@ module game_logic(
                     idx0 = rr*4 + cc;
                     idx1 = rr*4 + (cc+1);
                     if (board[idx0] != 0 && board[idx0] == board[idx1]) begin
-                        board[idx0] <= board[idx0] << 1;
+                        board[idx0] <= board[idx0] << 1; //double the value by moving 1 bit forward
                         board[idx1] <= 12'd0;
                         score       <= score + (board[idx0] << 1);
                     end
