@@ -37,6 +37,17 @@ module game_logic(
     reg [11:0] newrow[0:3];
 
     integer i, r, c;
+    
+    wire [15:0] rnd;
+
+    lfsr_random rng (
+        .clk   (clk),
+        .reset (reset),
+        .rnd   (rnd)
+    );
+
+    wire [3:0] rand_index   = rnd[3:0];  // 0..15, used for random start index
+    wire       rand_is_four = rnd[4];    // used as 2/4 selector
 
     // ---------------------------------------------------------
     // Combinational flags for CHECK state
@@ -396,14 +407,22 @@ module game_logic(
                 // SPAWN: add a new tile (simple)
                 // -----------------------------
                 S_SPAWN: begin
-                    placed = 1'b0;
-                    for (i = 0; i < 16; i = i + 1) begin
-                        if (!placed && board[i] == 12'd0) begin
-                            board[i] <= 12'd2;   // always 2 for now
-                            placed   = 1'b1;
-                        end
-                    end
+                   placed = 1'b0;
+                   // start from a random index and scan around the board once
+                   for (i = 0; i < 16; i = i + 1) begin
+                       idx = (rand_index + i) & 4'hF;   // wrap 0..15
+                       if (!placed && board[idx] == 12'd0) begin
+                       // 90% chance 2, 10% chance 4 (simple version)
+                           if (rand_is_four && rnd[5])   // just using extra bits for “rarer”
+                               board[idx] <= 12'd4;
+                           else
+                               board[idx] <= 12'd2;
+
+                           placed = 1'b1;
+                       end
+                   end
                 end
+
 
                 // -----------------------------
                 // END: nothing changes until reset
