@@ -38,7 +38,7 @@ module game_logic(
 
     integer i, r, c;
     
-    wire [15:0] rnd;
+    wire [9:0] rnd;
 
     lfsr_random rng (
         .clk   (clk),
