@@ -140,24 +140,27 @@ module game_logic(
     // ---------------------------------------------------------
 
     // Slide all tiles LEFT
+       // Slide all tiles LEFT
     task slide_left;
-        integer rr, cc, k, w;
+        integer rr, cc, w;
         begin
             for (rr = 0; rr < 4; rr = rr + 1) begin
                 // read row
                 for (cc = 0; cc < 4; cc = cc + 1)
                     row[cc] = board[rr*4 + cc];
 
-                // compress to the left
+                // clear newrow
+                for (cc = 0; cc < 4; cc = cc + 1)
+                    newrow[cc] = 12'd0;
+
+                // pack non-zeros to the left
                 w = 0;
-                for (k = 0; k < 4; k = k + 1) begin
-                    if (row[k] != 0) begin
-                        newrow[w] = row[k];
+                for (cc = 0; cc < 4; cc = cc + 1) begin
+                    if (row[cc] != 0) begin
+                        newrow[w] = row[cc];
                         w = w + 1;
                     end
                 end
-                for (; w < 4; w = w + 1)
-                    newrow[w] = 12'd0;
 
                 // write back
                 for (cc = 0; cc < 4; cc = cc + 1)
@@ -168,52 +171,56 @@ module game_logic(
 
     // Slide all tiles RIGHT
     task slide_right;
-        integer rr, cc, k, w;
+        integer rr, cc, w;
         begin
             for (rr = 0; rr < 4; rr = rr + 1) begin
-                // read row in reverse
+                // read row
                 for (cc = 0; cc < 4; cc = cc + 1)
-                    row[cc] = board[rr*4 + (3-cc)];
+                    row[cc] = board[rr*4 + cc];
 
-                // compress to the left in row[]
-                w = 0;
-                for (k = 0; k < 4; k = k + 1) begin
-                    if (row[k] != 0) begin
-                        newrow[w] = row[k];
-                        w = w + 1;
+                // clear newrow
+                for (cc = 0; cc < 4; cc = cc + 1)
+                    newrow[cc] = 12'd0;
+
+                // pack non-zeros to the right (fill newrow from the end)
+                w = 3;
+                for (cc = 3; cc >= 0; cc = cc - 1) begin
+                    if (row[cc] != 0) begin
+                        newrow[w] = row[cc];
+                        w = w - 1;
                     end
                 end
-                for (; w < 4; w = w + 1)
-                    newrow[w] = 12'd0;
 
-                // write back reversed
+                // write back
                 for (cc = 0; cc < 4; cc = cc + 1)
-                    board[rr*4 + (3-cc)] <= newrow[cc];
+                    board[rr*4 + cc] <= newrow[cc];
             end
         end
     endtask
 
     // Slide all tiles UP
     task slide_up;
-        integer cc, rr, k, w;
+        integer rr, cc, w;
         begin
             for (cc = 0; cc < 4; cc = cc + 1) begin
                 // read column
                 for (rr = 0; rr < 4; rr = rr + 1)
                     row[rr] = board[rr*4 + cc];
 
-                // compress upward (toward smaller r)
+                // clear newrow
+                for (rr = 0; rr < 4; rr = rr + 1)
+                    newrow[rr] = 12'd0;
+
+                // pack non-zeros upward
                 w = 0;
-                for (k = 0; k < 4; k = k + 1) begin
-                    if (row[k] != 0) begin
-                        newrow[w] = row[k];
+                for (rr = 0; rr < 4; rr = rr + 1) begin
+                    if (row[rr] != 0) begin
+                        newrow[w] = row[rr];
                         w = w + 1;
                     end
                 end
-                for (; w < 4; w = w + 1)
-                    newrow[w] = 12'd0;
 
-                // write back column
+                // write back
                 for (rr = 0; rr < 4; rr = rr + 1)
                     board[rr*4 + cc] <= newrow[rr];
             end
@@ -222,27 +229,29 @@ module game_logic(
 
     // Slide all tiles DOWN
     task slide_down;
-        integer cc, rr, k, w;
+        integer rr, cc, w;
         begin
             for (cc = 0; cc < 4; cc = cc + 1) begin
-                // read column in reverse
+                // read column
                 for (rr = 0; rr < 4; rr = rr + 1)
-                    row[rr] = board[(3-rr)*4 + cc];
+                    row[rr] = board[rr*4 + cc];
 
-                // compress to "top" of row[]
-                w = 0;
-                for (k = 0; k < 4; k = k + 1) begin
-                    if (row[k] != 0) begin
-                        newrow[w] = row[k];
-                        w = w + 1;
+                // clear newrow
+                for (rr = 0; rr < 4; rr = rr + 1)
+                    newrow[rr] = 12'd0;
+
+                // pack non-zeros downward (fill newrow from the end)
+                w = 3;
+                for (rr = 3; rr >= 0; rr = rr - 1) begin
+                    if (row[rr] != 0) begin
+                        newrow[w] = row[rr];
+                        w = w - 1;
                     end
                 end
-                for (; w < 4; w = w + 1)
-                    newrow[w] = 12'd0;
 
-                // write back reversed
+                // write back
                 for (rr = 0; rr < 4; rr = rr + 1)
-                    board[(3-rr)*4 + cc] <= newrow[rr];
+                    board[rr*4 + cc] <= newrow[rr];
             end
         end
     endtask
