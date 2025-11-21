@@ -80,13 +80,13 @@ module project_top_A7 (
         .clk(CLK100MHZ),           // maybe use a slower divided clock later
         .reset(btnC),
         .move_up(up_pulse),
-        .move_down(down_pulse),
         .move_left(left_pulse),
         .move_right(right_pulse),
         .board(board),
         .score(score),
         .game_state(game_state)
     );
+
 
     // ==== 5. Tile renderer (VGA pixels) ====
     wire [11:0] rgb; // 4-4-4
@@ -114,7 +114,12 @@ module project_top_A7 (
         .dp(dp)
     );
 
-    // ==== 8. LEDs for debug (optional) ====
-    assign led[1:0] = game_state;
-
+        // ==== 8. LEDs for debug (optional) ====
+    // low 4 bits of tile[0] on LEDs 3..0
+    assign led[3:0]  = board[0][3:0];
+    // show game_state (00=playing, 01=win, 10=lose) on LEDs 5..4
+    assign led[5:4]  = game_state;
+    // rest off for now
+    assign led[15:6] = 10'b0;
 endmodule
+
