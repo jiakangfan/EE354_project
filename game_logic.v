@@ -374,7 +374,7 @@ module game_logic
                 else
                     game_state <= 2'd0;   // still playing
 
-                //spawn state
+
                 if (changed && moves_left && !has_2048)
                 begin
                     placed = 1'b0;
@@ -392,7 +392,27 @@ module game_logic
                     end
                 end
 
+                // 5) SANITIZE: any illegal value → 0
+                for (i = 0; i < 16; i = i + 1)
+                begin
+                    case (board_next[i])
+                        12'd0,
+                        12'd2,
+                        12'd4,
+                        12'd8,
+                        12'd16,
+                        12'd32,
+                        12'd64,
+                        12'd128,
+                        12'd256,
+                        12'd512,
+                        12'd1024,
+                        12'd2048: ;           // legal, keep as is
+                        default: board_next[i] = 12'd0;  // clear anything weird
+                    endcase
+                end
 
+                // 6) COMMIT: update registered board
                 for (i = 0; i < 16; i = i + 1)
                 begin
                     board[i] <= board_next[i];
@@ -403,6 +423,7 @@ module game_logic
     end
 
 endmodule
+
 
 
 
