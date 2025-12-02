@@ -72,20 +72,23 @@ module project_top_A7 (
 
     // ==== 4. Game logic (2048 core) ====
     // We keep board as 16 tiles of up to, say, 12 bits (4096 max).
-    wire [11:0] board [0:15];
+    wire [191:0] board_flat; 
     wire [15:0] score;
     wire [1:0]  game_state;
 
-    game_logic core (
-        .clk(CLK100MHZ),           // maybe use a slower divided clock later
-        .reset(btnC),
-        .move_up(up_pulse),
-        .move_left(left_pulse),
-        .move_right(right_pulse),
-        .board(board),
-        .score(score),
-        .game_state(game_state)
-    );
+game_logic core (
+    .clk       (CLK100MHZ),
+    .reset     (btnC),
+    .move_up   (up_pulse),
+    .move_down (down_pulse),
+    .move_left (left_pulse),
+    .move_right(right_pulse),
+    .board_flat(board_flat),
+    .score     (score),
+    .game_state(game_state)
+);
+
+
 
 
     // ==== 5. Tile renderer (VGA pixels) ====
@@ -95,7 +98,7 @@ module project_top_A7 (
         .pixel_x(pixel_x),
         .pixel_y(pixel_y),
         .video_on(video_on),
-        .board(board),
+        .board_flat(board_flat),
         .game_state(game_state),
         .rgb(rgb)
     );
@@ -114,12 +117,18 @@ module project_top_A7 (
         .dp(dp)
     );
 
-        // ==== 8. LEDs for debug (optional) ====
-    // low 4 bits of tile[0] on LEDs 3..0
-    assign led[3:0]  = board[0][3:0];
-    // show game_state (00=playing, 01=win, 10=lose) on LEDs 5..4
-    assign led[5:4]  = game_state;
-    // rest off for now
-    assign led[15:6] = 10'b0;
+
+assign led[2] = btnR;  // right button
+assign led[3] = btnD;  // down button
+    
+    // LED[0] lights up if the top-left tile is NOT zero (should be ON if game started)
+    assign led[0] = (board_flat[11:0] != 12'd0); 
+    
+    // LED[1] shows if you are pressing RESET (should be ON when you hold btnC)
+    assign led[1] = btnC;
+
+    // LED[5:4] shows the current GAME STATE
+    // 00 = Init/Playing, 01 = Win, 10 = Lose
+    assign led[5:4] = game_state;
 endmodule
 
