@@ -374,7 +374,7 @@ module game_logic
                 else
                     game_state <= 2'd0;   // still playing
 
-
+                //spawn state
                 if (changed && moves_left && !has_2048)
                 begin
                     placed = 1'b0;
